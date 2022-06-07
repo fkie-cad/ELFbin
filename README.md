@@ -6,7 +6,7 @@ This library aims to support analysis of ELF - files using [Frida](https://frida
 
 ## Installation
 
-There are two ways to install this package.
+There is currently only one way to install this package.
 
 ### locally
 
