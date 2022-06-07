@@ -6,4 +6,4 @@ This library aims to support analysis of ELF - files using [Frida](https://frida
 
 ## Examples and Technical Details
 
-Please see the blog post [Make Frida great again]](https://lolcads.github.io/) for further details.
+Please see the blog post [Make Frida great again](https://lolcads.github.io/) for further details.
