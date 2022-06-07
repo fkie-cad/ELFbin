@@ -493,7 +493,7 @@ static PyMethodDef rawelf_injector_methods[] = {
 
 static PyTypeObject rawelf_injector_type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "_rawelf_injection.rawelf_injector",
+	.tp_name = "rawelf_injection.rawelf_injector",
 	.tp_doc = "Elf injector use for different injection techniques"
 		" implemented in BA.",
 	.tp_basicsize = sizeof (rawelf_injector),
@@ -513,12 +513,12 @@ static PyTypeObject rawelf_injector_type = {
 
 static PyModuleDef rawelf_injection_module = {
 	PyModuleDef_HEAD_INIT,
-	.m_name = "_rawelf_injection",
+	.m_name = "rawelf_injection",
 	.m_doc = "Elf injection and parsing library based on BA.",
 	.m_size = -1,
 };
 
-PyMODINIT_FUNC PyInit__rawelf_injection(void)
+PyMODINIT_FUNC PyInit_rawelf_injection(void)
 {
 	__label__ label_free_all;
 
@@ -540,14 +540,14 @@ PyMODINIT_FUNC PyInit__rawelf_injection(void)
 
 		// Create new exceptions
 		rawelf_parser_error = PyErr_NewException(
-						"_rawelf_injection.parser_error", NULL, NULL);
+						"rawelf_injection.parser_error", NULL, NULL);
 		Py_XINCREF(rawelf_parser_error);
 		if (PyModule_AddObject(mod, "parser_error",
 				rawelf_parser_error) < 0)
 			goto label_free_all;
 
 		rawelf_injector_error = PyErr_NewException(
-						"_rawelf_injection.injector_error", NULL, NULL);
+						"rawelf_injection.injector_error", NULL, NULL);
 		Py_XINCREF(rawelf_injector_error);
 		if (PyModule_AddObject(mod, "injector_error", 
 				rawelf_injector_error) < 0)

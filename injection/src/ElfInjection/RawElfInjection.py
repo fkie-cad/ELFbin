@@ -1,4 +1,4 @@
-import _rawelf_injection
+from ._rawelf_injection import rawelf_injection
 
 from .Manipulators.DynamicManipulator import DYN_TAGS
 
@@ -22,15 +22,15 @@ class RawElfInjector:
 	again manage the binary.
 
 	Attributes:
-		inj (_rawelf_injection.rawelf_injector): Provides
+		inj (rawelf_injection.rawelf_injector): Provides
 			missing injection techniques.
 
 	"""
 
-	__inj : _rawelf_injection.rawelf_injector
+	__inj : rawelf_injection.rawelf_injector
 
 	def __init__(self, binName):
-		self.__inj = _rawelf_injection.rawelf_injector(
+		self.__inj = rawelf_injection.rawelf_injector(
 			binName)
 		if (not self.__inj):
 			raise RuntimeError(
