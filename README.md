@@ -8,16 +8,9 @@ This library aims to support analysis of ELF - files using [Frida](https://frida
 
 There are two ways to install this package.
 
-### pip
-
-In the best case, you can just run
-```
-pip3 install elfbin
-```
-
 ### locally
 
-In every other case, just clone this repository and run the following:
+Currently only local installation is supported, because `_rawelf_injection` is built for linux-x86_64 only, which is not allowed by PyPi. For that, just clone this repository and run the following:
 ```bash
 $ cd injection/
 $ make build
