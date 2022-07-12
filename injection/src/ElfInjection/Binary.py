@@ -9,65 +9,67 @@ from lief import EXE_FORMATS
 
 
 class ElfBinary:
-	"""Represents an ELF binary
-	
-	Attributes:
-		__bin (Binary): LIEF binary object
-		__builder (Builder): LIEF builder used to patch offets etc.
-		__fileName (str): Name of opened binary.
-		__tempName (str): Name of temporary file used for swapping
-			ELF parsers.
+    """Represents an ELF binary
 
-	"""
+    Attributes:
+            __bin (Binary): LIEF binary object
+            __builder (Builder): LIEF builder used to patch offets etc.
+            __fileName (str): Name of opened binary.
+            __tempName (str): Name of temporary file used for swapping
+                    ELF parsers.
 
-	__bin : Binary
-	__builder : Builder
+    """
 
-	__fileName : str
+    __bin: Binary
+    __builder: Builder
 
-	__tempName : str
-	
-	def __init__(self, path : str):
-		"""Initializes the binary
+    __fileName: str
 
-		Args:
-			path (str): Path of binary to open, parse and manipulate.
+    __tempName: str
 
-		"""
-		# Open binary
-		self.__fileName = path
-		self.__bin = parse(self.__fileName)
-		if (not self.__bin):
-			raise RuntimeError('Failed to load {}'.format(self.__fileName))
+    def __init__(self, path: str):
+        """Initializes the binary
 
-		if (self.__bin.header.identity_class != ELF_CLASS.CLASS64 or
-				self.__bin.header.machine_type != ARCH.AARCH64 or
-				self.__bin.format != EXE_FORMATS.ELF):
-			raise ValueError('Currently only 64-bit ELF binaries are supported')
+        Args:
+                path (str): Path of binary to open, parse and manipulate.
 
-		# Build elf file such that offsets etc. are valid
-		self.__builder = Builder(self.__bin)
-		self.__builder.build()
+        """
+        # Open binary
+        self.__fileName = path
+        self.__bin = parse(self.__fileName)
+        if not self.__bin:
+            raise RuntimeError("Failed to load {}".format(self.__fileName))
 
-		# For parser swapping
-		self.__tempName = 'temp'
-		self.__isLoaded = False
+        if (
+            self.__bin.header.identity_class != ELF_CLASS.CLASS64
+            or self.__bin.header.machine_type != ARCH.AARCH64
+            or self.__bin.format != EXE_FORMATS.ELF
+        ):
+            raise ValueError("Currently only 64-bit ELF binaries are supported")
 
-	def store(self, name : str) -> None:
-		self.__bin.write(name)
+        # Build elf file such that offsets etc. are valid
+        self.__builder = Builder(self.__bin)
+        self.__builder.build()
 
-	def getBinary(self) -> Binary:
-		return self.__bin
+        # For parser swapping
+        self.__tempName = "temp"
+        self.__isLoaded = False
 
-	def getFileName(self) -> str:
-		return self.__fileName
+    def store(self, name: str) -> None:
+        self.__bin.write(name)
 
-	def _storetemp(self) -> None:
-		self.__bin.write(self.__tempName)
+    def getBinary(self) -> Binary:
+        return self.__bin
 
-	def _reparsetemp(self) -> None:
-		self.__bin = parse(self.__tempName)
-		remove(self.__tempName)
+    def getFileName(self) -> str:
+        return self.__fileName
 
-	def _getTempName(self) -> None:
-		return self.__tempName
+    def _storetemp(self) -> None:
+        self.__bin.write(self.__tempName)
+
+    def _reparsetemp(self) -> None:
+        self.__bin = parse(self.__tempName)
+        remove(self.__tempName)
+
+    def _getTempName(self) -> None:
+        return self.__tempName

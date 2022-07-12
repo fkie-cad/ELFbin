@@ -6,118 +6,96 @@ from ElfInjection.Manipulators.MemoryManipulator import ElfMemoryInserter
 
 
 class TestMemoryManipulator:
-	
-	@pytest.fixture
-	def offsets(self, lief_arm_android_bin):
-		binary = lief_arm_android_bin
-		return [
-			segment.file_offset
-			for segment in binary.segments
-			if (segment.type == lief.ELF.SEGMENT_TYPES.LOAD and
-				segment.physical_size > 0 and
-				segment.file_offset > 0)
-		]
+    @pytest.fixture
+    def offsets(self, lief_arm_android_bin):
+        binary = lief_arm_android_bin
+        return [
+            segment.file_offset
+            for segment in binary.segments
+            if (
+                segment.type == lief.ELF.SEGMENT_TYPES.LOAD
+                and segment.physical_size > 0
+                and segment.file_offset > 0
+            )
+        ]
 
-	@pytest.fixture
-	def sizes(self):
-		# Chosen s.t. we stay in same loadable segment
-		# for arm_android_bin!
-		return [
-			i * 0x100
-			for i in range(1, 3)
-		]
+    @pytest.fixture
+    def sizes(self):
+        # Chosen s.t. we stay in same loadable segment
+        # for arm_android_bin!
+        return [i * 0x100 for i in range(1, 3)]
 
-	@pytest.mark.memory
-	@pytest.mark.parametrize('offsetIndex', range(4))
-	@pytest.mark.parametrize('sizeIndex', range(2))
-	def test_overwrite_memory(
-			self,
-			inj_arm_android_bin,
-			offsets,
-			offsetIndex,
-			sizes,
-			sizeIndex
-		):
-		offset = offsets[offsetIndex]
-		size = sizes[sizeIndex]
-		binary = inj_arm_android_bin.getElfBinary().getBinary()
-		
-		# Construct overwriter
-		overwriter = ElfMemoryOverwriter(
-			offset,
-			b'\x42' * size
-		)
+    @pytest.mark.memory
+    @pytest.mark.parametrize("offsetIndex", range(4))
+    @pytest.mark.parametrize("sizeIndex", range(2))
+    def test_overwrite_memory(
+        self, inj_arm_android_bin, offsets, offsetIndex, sizes, sizeIndex
+    ):
+        offset = offsets[offsetIndex]
+        size = sizes[sizeIndex]
+        binary = inj_arm_android_bin.getElfBinary().getBinary()
 
-		# Overwrite memory. Do not consider 'updatedOffset'
-		# and 'updatedData', because they merely change
-		# offset and data, but NOT the behaviour of the
-		# function.
-		overwriter._manipulateMemory(
-			inj_arm_android_bin,
-			updatedOffset=None,
-			updatedData=None
-		)
+        # Construct overwriter
+        overwriter = ElfMemoryOverwriter(offset, b"\x42" * size)
 
-		binary = inj_arm_android_bin.getElfBinary().getBinary()
+        # Overwrite memory. Do not consider 'updatedOffset'
+        # and 'updatedData', because they merely change
+        # offset and data, but NOT the behaviour of the
+        # function.
+        overwriter._manipulateMemory(
+            inj_arm_android_bin, updatedOffset=None, updatedData=None
+        )
 
-		# Check memory
-		seg_start = binary.segment_from_offset(offset)
-		seg_end = binary.segment_from_offset(offset + size - 1)
+        binary = inj_arm_android_bin.getElfBinary().getBinary()
 
-		assert(seg_start)
-		assert(seg_end)
-		assert(seg_start == seg_end)
+        # Check memory
+        seg_start = binary.segment_from_offset(offset)
+        seg_end = binary.segment_from_offset(offset + size - 1)
 
-		roff = offset - seg_start.file_offset
-		assert(seg_start.content[roff] == ord(b'\x42'))
-		assert(seg_start.content[roff + size - 1] == ord(b'\x42'))
+        assert seg_start
+        assert seg_end
+        assert seg_start == seg_end
 
-	@pytest.mark.skip(reason='LIEF parser error causes python to crash')
-	@pytest.mark.memory
-	@pytest.mark.parametrize('offsetIndex', range(4))
-	@pytest.mark.parametrize('sizeIndex', range(2))
-	def test_inject_memory(
-			self,
-			inj_arm_android_bin,
-			offsets,
-			offsetIndex,
-			sizes,
-			sizeIndex
-		):
+        roff = offset - seg_start.file_offset
+        assert seg_start.content[roff] == ord(b"\x42")
+        assert seg_start.content[roff + size - 1] == ord(b"\x42")
 
-		offset = offsets[offsetIndex]
-		size = sizes[sizeIndex]
-		binary = inj_arm_android_bin.getElfBinary().getBinary()
+    @pytest.mark.skip(reason="LIEF parser error causes python to crash")
+    @pytest.mark.memory
+    @pytest.mark.parametrize("offsetIndex", range(4))
+    @pytest.mark.parametrize("sizeIndex", range(2))
+    def test_inject_memory(
+        self, inj_arm_android_bin, offsets, offsetIndex, sizes, sizeIndex
+    ):
 
-		# Get original sizes of segment
-		seg_start = binary.segment_from_offset(offset)
-		fileSize = seg_start.physical_size
-		memSize = seg_start.virtual_size
+        offset = offsets[offsetIndex]
+        size = sizes[sizeIndex]
+        binary = inj_arm_android_bin.getElfBinary().getBinary()
 
-		# Construct inserter
-		inserter = ElfMemoryInserter(
-			offset,
-			b'\x42' * size
-		)
+        # Get original sizes of segment
+        seg_start = binary.segment_from_offset(offset)
+        fileSize = seg_start.physical_size
+        memSize = seg_start.virtual_size
 
-		# Perform injection
-		inserter._manipulateMemory(
-			inj_arm_android_bin
-		)
+        # Construct inserter
+        inserter = ElfMemoryInserter(offset, b"\x42" * size)
 
-		# Reload binary
-		binary = inj_arm_android_bin.getElfBinary().getBinary()
+        # Perform injection
+        inserter._manipulateMemory(inj_arm_android_bin)
 
-		# Check memory
-		seg_start = binary.segment_from_offset(offset)
-		seg_end = binary.segment_from_offset(offset + size - 1)
+        # Reload binary
+        binary = inj_arm_android_bin.getElfBinary().getBinary()
 
-		assert(seg_start)
-		assert(seg_end)
-		assert(seg_start == seg_end)
-		assert(seg_start.physical_size == fileSize + size)
-		assert(seg_start.virtual_size == memSize + size)
+        # Check memory
+        seg_start = binary.segment_from_offset(offset)
+        seg_end = binary.segment_from_offset(offset + size - 1)
 
-		roff = offset - seg_start.file_offset
-		assert(seg_start.content[roff] == ord(b'\x42'))
-		assert(seg_start.content[roff + size - 1] == ord(b'\x42'))
+        assert seg_start
+        assert seg_end
+        assert seg_start == seg_end
+        assert seg_start.physical_size == fileSize + size
+        assert seg_start.virtual_size == memSize + size
+
+        roff = offset - seg_start.file_offset
+        assert seg_start.content[roff] == ord(b"\x42")
+        assert seg_start.content[roff + size - 1] == ord(b"\x42")

@@ -22,14 +22,10 @@ class ElfCodeCave:
     """
 
     offset: int
-    vaddr : int
+    vaddr: int
     size: int
 
-    def __init__(
-            self,
-            offset: int,
-            vaddr : int,
-            size: int):
+    def __init__(self, offset: int, vaddr: int, size: int):
         """Initialize attributes by constructor
 
         Args:
@@ -52,9 +48,11 @@ class ElfCodeCave:
                 equal as regards their members.
 
         """
-        return (self.offset == other.offset and
-                self.vaddr == other.vaddr and
-                self.size == other.size)
+        return (
+            self.offset == other.offset
+            and self.vaddr == other.vaddr
+            and self.size == other.size
+        )
 
 
 class ElfCodeCaveSeeker(ABC):
@@ -110,13 +108,10 @@ class ElfSegmentSeeker(ElfCodeCaveSeeker):
 
     """
 
-    def __init__(self, caveSize : int):
+    def __init__(self, caveSize: int):
         super().__init__(caveSize)
 
-    def __getCaves(
-            self,
-            segments : List[Tuple[int, int]]
-        ) -> List[Tuple[int, int]]:
+    def __getCaves(self, segments: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
         """Search for code caves in given segments
 
         Uses that segments are no more than memory chunks at
@@ -141,19 +136,14 @@ class ElfSegmentSeeker(ElfCodeCaveSeeker):
         # be contained in a smaller segment.
         contained = []
         for ndx, big in enumerate(segments):
-            for small in segments[ndx + 1 :]:
-                if (big[0] <= small[0] and
-                    big[0] + big[1] >= small[0] + small[1]):
+            for small in segments[ndx + 1:]:
+                if big[0] <= small[0] and big[0] + big[1] >= small[0] + small[1]:
                     # big contains small
                     contained.append(small)
 
         # Remove contained segments as only their containing
         # segments are relevant
-        segments = [
-            s
-            for s in segments
-            if s not in contained
-        ]
+        segments = [s for s in segments if s not in contained]
         segments = sorted(segments, key=lambda s: s[0])
 
         # Compute empty space between segments, i.e. code caves
@@ -195,7 +185,7 @@ class ElfSegmentSeeker(ElfCodeCaveSeeker):
         ]
 
         fileViewCaves = self.__getCaves(segments)
-        if (not fileViewCaves):
+        if not fileViewCaves:
             return []
 
         # Get code caves in process image
@@ -206,7 +196,7 @@ class ElfSegmentSeeker(ElfCodeCaveSeeker):
         ]
 
         processImageCaves = self.__getCaves(segments)
-        if (not processImageCaves):
+        if not processImageCaves:
             return []
 
         # Combine one file view cave with one process image
@@ -215,11 +205,9 @@ class ElfSegmentSeeker(ElfCodeCaveSeeker):
             ElfCodeCave(
                 fileViewCaves[i][0],
                 processImageCaves[i][0],
-                min(fileViewCaves[i][1], processImageCaves[i][1])
+                min(fileViewCaves[i][1], processImageCaves[i][1]),
             )
-            for i in range(min(
-                len(fileViewCaves), len(processImageCaves)
-            ))
+            for i in range(min(len(fileViewCaves), len(processImageCaves)))
         ]
 
         return caves

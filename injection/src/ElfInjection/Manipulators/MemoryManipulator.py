@@ -4,204 +4,195 @@ from dataclasses import dataclass
 
 @dataclass
 class ElfMemoryChunk:
-	offset : int
-	size : int
+    offset: int
+    size: int
 
-	def __init__(self, offset : int, size : int):
-		self.offset = offset
-		self.size = size
+    def __init__(self, offset: int, size: int):
+        self.offset = offset
+        self.size = size
+
 
 class ElfMemoryManipulator(ABC):
-	"""Memory Manipulator
+    """Memory Manipulator
 
-	Abstract memory manipulator that will be used to describe a
-	commong interface for all memory manipulators.
+    Abstract memory manipulator that will be used to describe a
+    commong interface for all memory manipulators.
 
-	This can e.g. be used for inserting new memory to be used
-	as a segment.
+    This can e.g. be used for inserting new memory to be used
+    as a segment.
 
-	Attributes:
-		__chunk (ElfMemoryChunk): Memory chunk to manipulate
-		__data (bytes): Data to be used for manipulation
+    Attributes:
+            __chunk (ElfMemoryChunk): Memory chunk to manipulate
+            __data (bytes): Data to be used for manipulation
 
-	"""
+    """
 
-	__chunk : ElfMemoryChunk
-	__data : bytes
+    __chunk: ElfMemoryChunk
+    __data: bytes
 
-	def __init__(self, offset : int, data : bytes):
-		"""Initialize attributes with constructor
+    def __init__(self, offset: int, data: bytes):
+        """Initialize attributes with constructor
 
-		Args:
-			offset (int): File offset of memory chunk to
-				manipulate.
-			data (bytes): Data to be used for manipulation.
-				Its length determines the amount of bytes
-				to manipulate.
-		
-		"""
-		self.__chunk = ElfMemoryChunk(offset, len(data))
-		self.__data = data
+        Args:
+                offset (int): File offset of memory chunk to
+                        manipulate.
+                data (bytes): Data to be used for manipulation.
+                        Its length determines the amount of bytes
+                        to manipulate.
 
-	@abstractmethod
-	def _manipulateMemory(
-			self,
-			inj,
-			updatedOffset=None,
-			updatedData=None) -> None:
-		"""Manipulates a memory
-		
-		Abstract declaration of memory manipulation that will be
-		overwritten by any memory manipulator.
+        """
+        self.__chunk = ElfMemoryChunk(offset, len(data))
+        self.__data = data
 
-		Note that inserting new memory and writing specified data to
-		it is also considered a manipulation. Of course manipulating
-		existing chunks is aswell.
-	
-		Args:
-			inj (ElfCodeInjector): Injector used to manipulate a
-				binary.
-			updatedOffset (int): If not None, it will be used as
-				file offset. This is only relevant if this
-				manipulator is called in a call - chain, where
-				previous manipulations influence offsets, vaddrs etc.
-			updatedData (bytes): If not None, it will be used as
-				data to use for manipulation.
+    @abstractmethod
+    def _manipulateMemory(self, inj, updatedOffset=None, updatedData=None) -> None:
+        """Manipulates a memory
 
-		Returns:
-			None
+        Abstract declaration of memory manipulation that will be
+        overwritten by any memory manipulator.
 
-		"""
-		pass
+        Note that inserting new memory and writing specified data to
+        it is also considered a manipulation. Of course manipulating
+        existing chunks is aswell.
 
-	def _getChunk(self) -> ElfMemoryChunk:
-		"""Returns chunk description
-		
-		Returns:
-			Chunk
+        Args:
+                inj (ElfCodeInjector): Injector used to manipulate a
+                        binary.
+                updatedOffset (int): If not None, it will be used as
+                        file offset. This is only relevant if this
+                        manipulator is called in a call - chain, where
+                        previous manipulations influence offsets, vaddrs etc.
+                updatedData (bytes): If not None, it will be used as
+                        data to use for manipulation.
 
-		"""
-		return self.__chunk
+        Returns:
+                None
 
-	def _getData(self) -> bytes:
-		"""Returns data
+        """
+        pass
 
-		Returns:
-			Data used for manipulation
+    def _getChunk(self) -> ElfMemoryChunk:
+        """Returns chunk description
 
-		"""
-		return self.__data
+        Returns:
+                Chunk
+
+        """
+        return self.__chunk
+
+    def _getData(self) -> bytes:
+        """Returns data
+
+        Returns:
+                Data used for manipulation
+
+        """
+        return self.__data
+
 
 class ElfMemoryOverwriter(ElfMemoryManipulator):
-	"""Memory manipulation by overwrite
+    """Memory manipulation by overwrite
 
-	Realizes memory manipulation by overwriting a specified
-	memory region. Note that overwriting arbitrary memory
-	can break vital ELF structures and thus correctness of
-	the binary.
+    Realizes memory manipulation by overwriting a specified
+    memory region. Note that overwriting arbitrary memory
+    can break vital ELF structures and thus correctness of
+    the binary.
 
-	"""
+    """
 
-	def __init__(self, offset : int, data : bytes):
-		"""Initialize attributes by constructor
+    def __init__(self, offset: int, data: bytes):
+        """Initialize attributes by constructor
 
-		Args:
-			offset (int): File offset of memory chunk to
-				manipulate.
-			data (bytes): Data to write into the chunk. The
-				length of data determines the size of the chunk
-				to overwrite.
+        Args:
+                offset (int): File offset of memory chunk to
+                        manipulate.
+                data (bytes): Data to write into the chunk. The
+                        length of data determines the size of the chunk
+                        to overwrite.
 
-		"""
-		super().__init__(offset, data)
+        """
+        super().__init__(offset, data)
 
-	def _manipulateMemory(
-			self,
-			inj,
-			updatedOffset=None,
-			updatedData=None) -> None:
-		"""Overwrite chunk with specified data
-		
-		Args:
-			inj (ElfCodeInjector): Injector used to manipulate a
-				binary.
-			updatedOffset (int): If not None, it will be used as
-				file offset. This is only relevant if this
-				manipulator is called in a call - chain, where
-				previous manipulations influence offsets, vaddrs etc.
-			updatedData (bytes): If not None, it will be used as
-				data to use for manipulation.
+    def _manipulateMemory(self, inj, updatedOffset=None, updatedData=None) -> None:
+        """Overwrite chunk with specified data
 
-		Returns:
-			None
+        Args:
+                inj (ElfCodeInjector): Injector used to manipulate a
+                        binary.
+                updatedOffset (int): If not None, it will be used as
+                        file offset. This is only relevant if this
+                        manipulator is called in a call - chain, where
+                        previous manipulations influence offsets, vaddrs etc.
+                updatedData (bytes): If not None, it will be used as
+                        data to use for manipulation.
 
-		"""
-		chunk = self._getChunk()
+        Returns:
+                None
 
-		offset = chunk.offset
-		if updatedOffset:
-			offset = updatedOffset
+        """
+        chunk = self._getChunk()
 
-		data = self._getData()
-		if updatedData:
-			data = updatedData
+        offset = chunk.offset
+        if updatedOffset:
+            offset = updatedOffset
 
-		return inj.raw.overwriteMemory(offset, data)
+        data = self._getData()
+        if updatedData:
+            data = updatedData
+
+        return inj.raw.overwriteMemory(offset, data)
+
 
 class ElfMemoryInserter(ElfMemoryManipulator):
-	"""Memory manipulation by insertion
+    """Memory manipulation by insertion
 
-	Realizes memory manipulation by inserting new memory
-	at specified offset and of specified size.
+    Realizes memory manipulation by inserting new memory
+    at specified offset and of specified size.
 
-	Note that inserting memory into the binary can not
-	just invalidate vital ELF structures, but also break
-	cross - references. Also CPU - instructions can be
-	affected (e.g. on ARM64 see 'adrp').
-	
-	"""
-	
-	def __init__(self, offset : int, data : bytes):
-		"""Initialize attributes by constructor
-		
-		Args:
-			offset (int): File offset of new memory chunk
-			data (bytes): Data to write to new chunk. Its
-				length determines the amount of bytes to
-				insert.
+    Note that inserting memory into the binary can not
+    just invalidate vital ELF structures, but also break
+    cross - references. Also CPU - instructions can be
+    affected (e.g. on ARM64 see 'adrp').
 
-		"""
-		super().__init__(offset, data)
+    """
 
-	def _manipulateMemory(
-			self,
-			inj,
-			updatedOffset=None,
-			updatedData=None) -> None:
-		"""Inserts new memory into binary
+    def __init__(self, offset: int, data: bytes):
+        """Initialize attributes by constructor
 
-		Args:
-			inj (ElfCodeInjector): Injector used to manipulate a
-				binary.
-			updatedOffset (int): If not None, it will be used as
-				file offset. This is only relevant if this
-				manipulator is called in a call - chain, where
-				previous manipulations influence offsets, vaddrs etc.
-			updatedData (bytes): If not None, it will be used as
-				data to use for manipulation.
+        Args:
+                offset (int): File offset of new memory chunk
+                data (bytes): Data to write to new chunk. Its
+                        length determines the amount of bytes to
+                        insert.
 
-		Returns:
-			None
-			
-		"""
-		chunk = self._getChunk()
+        """
+        super().__init__(offset, data)
 
-		offset = chunk.offset
-		if updatedOffset:
-			offset = updatedOffset
+    def _manipulateMemory(self, inj, updatedOffset=None, updatedData=None) -> None:
+        """Inserts new memory into binary
 
-		data = self._getData()
-		if updatedData:
-			data = updatedData
+        Args:
+                inj (ElfCodeInjector): Injector used to manipulate a
+                        binary.
+                updatedOffset (int): If not None, it will be used as
+                        file offset. This is only relevant if this
+                        manipulator is called in a call - chain, where
+                        previous manipulations influence offsets, vaddrs etc.
+                updatedData (bytes): If not None, it will be used as
+                        data to use for manipulation.
 
-		return inj.raw.insertMemory(offset, data)
+        Returns:
+                None
+
+        """
+        chunk = self._getChunk()
+
+        offset = chunk.offset
+        if updatedOffset:
+            offset = updatedOffset
+
+        data = self._getData()
+        if updatedData:
+            data = updatedData
+
+        return inj.raw.insertMemory(offset, data)

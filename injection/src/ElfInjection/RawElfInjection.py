@@ -4,215 +4,192 @@ from .Manipulators.DynamicManipulator import DYN_TAGS
 
 
 class RawElfInjector:
-	"""Injection technique supplement for LIEF
+    """Injection technique supplement for LIEF
 
-	CAUTION: Inserting new memory between a section and its
-	references can break those references. E.g. .plt uses
-	relative addressing for x86_64 PIEs. Appending a new entry
-	to .dynamic for a "classic" gcc build will result in
-	broken references to .got.
-	
-	CAUTION: Using this class will need the current working
-	directory to be writable. This is due to the fact that
-	the raw elf parser can only parse a file and is not able
-	to take over LIEF's memory representation of the ELF file.
-	Thus this class will use 'Binary.write' to store the
-	state of the LIEF binary and then reopen the file with the
-	raw parser. Eventually, after a function call, LIEF will
-	again manage the binary.
+    CAUTION: Inserting new memory between a section and its
+    references can break those references. E.g. .plt uses
+    relative addressing for x86_64 PIEs. Appending a new entry
+    to .dynamic for a "classic" gcc build will result in
+    broken references to .got.
 
-	Attributes:
-		inj (rawelf_injection.rawelf_injector): Provides
-			missing injection techniques.
+    CAUTION: Using this class will need the current working
+    directory to be writable. This is due to the fact that
+    the raw elf parser can only parse a file and is not able
+    to take over LIEF's memory representation of the ELF file.
+    Thus this class will use 'Binary.write' to store the
+    state of the LIEF binary and then reopen the file with the
+    raw parser. Eventually, after a function call, LIEF will
+    again manage the binary.
 
-	"""
+    Attributes:
+            inj (rawelf_injection.rawelf_injector): Provides
+                    missing injection techniques.
 
-	__inj : rawelf_injection.rawelf_injector
+    """
 
-	def __init__(self, binName):
-		self.__inj = rawelf_injection.rawelf_injector(
-			binName)
-		if (not self.__inj):
-			raise RuntimeError(
-				'Failed to load {}'.format(binName)
-			)
+    __inj: rawelf_injection.rawelf_injector
 
-	def appendDynamicEntry(
-			self,
-			tag : DYN_TAGS,
-			value : int) -> int:
-		"""Appends a .dynamic entry
+    def __init__(self, binName):
+        self.__inj = rawelf_injection.rawelf_injector(binName)
+        if not self.__inj:
+            raise RuntimeError("Failed to load {}".format(binName))
 
-		This function "naively" appends a new entry to
-		.dynamic. Notice that with "normal" gcc builds, the
-		.got section comes immediately after .dynamic. For
-		x86_64 PIEs that use addressing of a form like
-		"[rip + <offset to got entry>]", this function will
-		break the reference and most likely cause a crash.
+    def appendDynamicEntry(self, tag: DYN_TAGS, value: int) -> int:
+        """Appends a .dynamic entry
 
-		Args:
-			tag (DYN_TAGS): Tag of the entry
-			value (int): Value of the entry
+        This function "naively" appends a new entry to
+        .dynamic. Notice that with "normal" gcc builds, the
+        .got section comes immediately after .dynamic. For
+        x86_64 PIEs that use addressing of a form like
+        "[rip + <offset to got entry>]", this function will
+        break the reference and most likely cause a crash.
 
-		Returns:
-			File offset of the new entry
+        Args:
+                tag (DYN_TAGS): Tag of the entry
+                value (int): Value of the entry
 
-		"""
-		result = self.__inj.append_dynamic_entry(
-			tag=tag,
-			value=value
-		)
-		return result
+        Returns:
+                File offset of the new entry
 
-	def overwriteDynamicEntry(
-			self,
-			new_tag : DYN_TAGS,
-			new_value : int,
-			index : int) -> None:
-		"""Overwrites a .dynamic entry
+        """
+        result = self.__inj.append_dynamic_entry(tag=tag, value=value)
+        return result
 
-		Args:
-			new_tag (DYN_TAGS): Tag of new entry
-			new_value (int): Value of new entry
-			index (int): Index of entry to overwrite
+    def overwriteDynamicEntry(
+        self, new_tag: DYN_TAGS, new_value: int, index: int
+    ) -> None:
+        """Overwrites a .dynamic entry
 
-		Returns:
-			None
+        Args:
+                new_tag (DYN_TAGS): Tag of new entry
+                new_value (int): Value of new entry
+                index (int): Index of entry to overwrite
 
-		"""
-		result = self.__inj.overwrite_dynamic_entry(
-			tag=new_tag,
-			value=new_value,
-			index=index
-		)
-		return result
+        Returns:
+                None
 
-	def appendPhtEntry(
-			self,
-			ptype : int,
-			flags : int,
-			offset : int,
-			vaddr : int,
-			file_size : int,
-			mem_size : int,
-			align : int) -> int:
-		"""Appends a new PHT entry to PHT
+        """
+        result = self.__inj.overwrite_dynamic_entry(
+            tag=new_tag, value=new_value, index=index
+        )
+        return result
 
-		Args:
-			ptype (int): Type of the segment
-			flags (int): Access rights for described segment.
-				Either PF_X(0x1), PF_W(0x2), PF_R(0x4) or a
-				combination of those.
-			offset (int): File offset of described segment.
-			vaddr (int): Virtual address of described segment.
-			file_size (int): Size of segment in file.
-			mem_size (int): Size of segment in process image.
-			align (int): Alignment s.t. offset = vaddr mod
-				align.
+    def appendPhtEntry(
+        self,
+        ptype: int,
+        flags: int,
+        offset: int,
+        vaddr: int,
+        file_size: int,
+        mem_size: int,
+        align: int,
+    ) -> int:
+        """Appends a new PHT entry to PHT
 
-		Returns:
-			Offset of appended PHT entry.
+        Args:
+                ptype (int): Type of the segment
+                flags (int): Access rights for described segment.
+                        Either PF_X(0x1), PF_W(0x2), PF_R(0x4) or a
+                        combination of those.
+                offset (int): File offset of described segment.
+                vaddr (int): Virtual address of described segment.
+                file_size (int): Size of segment in file.
+                mem_size (int): Size of segment in process image.
+                align (int): Alignment s.t. offset = vaddr mod
+                        align.
 
-		"""
-		result = self.__inj.append_pht_entry(
-			ptype=ptype,
-			flags=flags,
-			offset=offset,
-			vaddr=vaddr,
-			file_size=file_size,
-			mem_size=mem_size,
-			align=align
-		)
-		return result
+        Returns:
+                Offset of appended PHT entry.
 
-	def overwritePhtEntry(
-			self,
-			ptype : int,
-			flags : int,
-			offset : int,
-			vaddr : int,
-			file_size : int,
-			mem_size : int,
-			align : int,
-			index : int) -> None:
-		"""Overwrites an existing PHT entry
+        """
+        result = self.__inj.append_pht_entry(
+            ptype=ptype,
+            flags=flags,
+            offset=offset,
+            vaddr=vaddr,
+            file_size=file_size,
+            mem_size=mem_size,
+            align=align,
+        )
+        return result
 
-		Args:
-			ptype (int): Type of the segment
-			flags (int): Access rights for described segment.
-				Either PF_X(0x1), PF_W(0x2), PF_R(0x4) or a
-				combination of those.
-			offset (int): File offset of described segment.
-			vaddr (int): Virtual address of described segment.
-			file_size (int): Size of segment in file.
-			mem_size (int): Size of segment in process image.
-			align (int): Alignment s.t. offset = vaddr mod
-				align.
-			index (int): Index of PHT entry to overwrite.
+    def overwritePhtEntry(
+        self,
+        ptype: int,
+        flags: int,
+        offset: int,
+        vaddr: int,
+        file_size: int,
+        mem_size: int,
+        align: int,
+        index: int,
+    ) -> None:
+        """Overwrites an existing PHT entry
 
-		Returns:
-			None
+        Args:
+                ptype (int): Type of the segment
+                flags (int): Access rights for described segment.
+                        Either PF_X(0x1), PF_W(0x2), PF_R(0x4) or a
+                        combination of those.
+                offset (int): File offset of described segment.
+                vaddr (int): Virtual address of described segment.
+                file_size (int): Size of segment in file.
+                mem_size (int): Size of segment in process image.
+                align (int): Alignment s.t. offset = vaddr mod
+                        align.
+                index (int): Index of PHT entry to overwrite.
 
-		"""
-		result = self.__inj.overwrite_pht_entry(
-			ptype=ptype,
-			flags=flags,
-			offset=offset,
-			vaddr=vaddr,
-			file_size=file_size,
-			mem_size=mem_size,
-			align=align,
-			index=index
-		)
-		return result
+        Returns:
+                None
 
-	def overwriteMemory(
-			self,
-			offset : int,
-			buffer : bytes) -> None:
-		"""Overwrites specified memory region
+        """
+        result = self.__inj.overwrite_pht_entry(
+            ptype=ptype,
+            flags=flags,
+            offset=offset,
+            vaddr=vaddr,
+            file_size=file_size,
+            mem_size=mem_size,
+            align=align,
+            index=index,
+        )
+        return result
 
-		The size of the memory region to overwrite is
-		indirectly given by the length of 'buffer'.
+    def overwriteMemory(self, offset: int, buffer: bytes) -> None:
+        """Overwrites specified memory region
 
-		Args:
-			offset (int): File offset of memory region to
-				overwrite
-			buffer (bytes): Bytes to write into memory region
+        The size of the memory region to overwrite is
+        indirectly given by the length of 'buffer'.
 
-		Returns:
-			None
+        Args:
+                offset (int): File offset of memory region to
+                        overwrite
+                buffer (bytes): Bytes to write into memory region
 
-		"""
-		result = self.__inj.overwrite_memory(
-			offset=offset,
-			buffer=buffer
-		)
-		return result
+        Returns:
+                None
 
-	def insertMemory(
-			self,
-			offset : int,
-			buffer : bytes) -> None:
-		"""Inserts new memory into specified region
+        """
+        result = self.__inj.overwrite_memory(offset=offset, buffer=buffer)
+        return result
 
-		The amount of bytes to be inserted is given implicitly
-		by the length of 'buffer'.
+    def insertMemory(self, offset: int, buffer: bytes) -> None:
+        """Inserts new memory into specified region
 
-		Inserting memory can break cross - references.
+        The amount of bytes to be inserted is given implicitly
+        by the length of 'buffer'.
 
-		Args:
-			offset (int): File offset that specifies where to
-			"open a gap" and to fill that gap with given buffer.
-			buffer (bytes): Bytes to write into gap.
+        Inserting memory can break cross - references.
 
-		Returns:
-			None
+        Args:
+                offset (int): File offset that specifies where to
+                "open a gap" and to fill that gap with given buffer.
+                buffer (bytes): Bytes to write into gap.
 
-		"""
-		result = self.__inj.insert_memory(
-			offset=offset,
-			buffer=buffer
-		)
-		
-		return result
+        Returns:
+                None
+
+        """
+        result = self.__inj.insert_memory(offset=offset, buffer=buffer)
+
+        return result
