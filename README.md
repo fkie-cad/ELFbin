@@ -19,4 +19,4 @@ $ make locinstall
 
 ## Detailed information on theory and usage
 
-Please see my [blog post](https://lolcads.github.io/posts/2022/05/make_frida_great_again) for detailed information.
+Please see my [blog post](https://lolcads.github.io/posts/2022/07/make_frida_great_again/) for detailed information.
